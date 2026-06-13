@@ -57,6 +57,12 @@ function App(): JSX.Element {
         contentInsetAdjustmentBehavior="automatic"
         style={backgroundStyle}>
         <Header />
+        <View style={[styles.domainRow, {backgroundColor: isDarkMode ? Colors.black : Colors.white}]}>
+          <Text style={styles.checkmark}>✓</Text>
+          <Text style={[styles.domainText, {color: isDarkMode ? Colors.white : Colors.black}]}>
+            nextjs-website-alpha-weld.vercel.app
+          </Text>
+        </View>
         <View
           style={{
             backgroundColor: isDarkMode ? Colors.black : Colors.white,
@@ -97,6 +103,22 @@ const styles = StyleSheet.create({
   },
   highlight: {
     fontWeight: '700',
+  },
+  domainRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+  },
+  checkmark: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#22c55e',
+    marginRight: 8,
+  },
+  domainText: {
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
 
