@@ -5,105 +5,98 @@
  * @format
  */
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import { SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, useColorScheme, View, } from 'react-native';
-import { Colors, DebugInstructions, Header, LearnMoreLinks, ReloadInstructions, } from 'react-native/Libraries/NewAppScreen';
+import React, {useEffect, useState} from 'react';
+import {
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Switch,
+  Text,
+  useColorScheme,
+  View,
+} from 'react-native';
+import {
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
+import HumanSecurity from '@humansecurity/react-native-sdk';
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+HumanSecurity.startWithAppId('PXjJ0cYtn9');
 
-function Section({children, title}: SectionProps): JSX.Element {
+type WeatherObservation = {
+  obsTimeLocal: string;
+  imperial: {
+    temp: number;
+    windChill: number;
+    pressure: string;
+  };
+  humidity: number;
+  windSpeed: number;
+  precipitation: number;
+  weatherCode: number;
+};
+
+function AppContent(): React.JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
+  const insets = useSafeAreaInsets();
+  const [useOverride, setUseOverride] = useState(false);
+  const [weather, setWeather] = useState<WeatherObservation | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const baseUrl = useOverride
+    ? 'https://bookkeeper.bhenning.com'
+    : 'https://vercel.bhenning.com';
+
+  useEffect(() => {
+    setWeather(null);
+    setError(null);
+    const pxHeaders = HumanSecurity.getHeaders();
+    fetch(`${baseUrl}/api/weather`, {method: 'GET', headers: pxHeaders})
+      .then(res => res.json())
+      .then(data => setWeather(data.observations?.[0] ?? null))
+      .catch(() => setError('Failed to fetch weather'));
+  }, [baseUrl]);
+
+  const bg = isDarkMode ? '#000' : '#fff';
+  const fg = isDarkMode ? '#fff' : '#000';
+
   return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
+    <ScrollView
+      style={{flex: 1, backgroundColor: isDarkMode ? '#1a1a1a' : '#f3f3f3'}}
+      contentContainerStyle={{paddingTop: insets.top}}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+      <View style={[styles.domainRow, {backgroundColor: bg}]}>
+        <Text style={styles.checkmark}>✓</Text>
+        <Text style={[styles.domainText, {color: fg, flex: 1}]}>
+          {useOverride ? 'bookkeeper.bhenning.com' : 'vercel.bhenning.com'}
+        </Text>
+        <Switch value={useOverride} onValueChange={setUseOverride} />
+      </View>
+      <View style={[styles.card, {backgroundColor: bg}]}>
+        <Text style={[styles.cardTitle, {color: fg}]}>Weather</Text>
+        {error ? (
+          <Text style={[styles.cardBody, {color: fg}]}>{error}</Text>
+        ) : weather ? (
+          <Text style={[styles.cardBody, {color: fg}]}>
+            {`Temp: ${weather.imperial.temp}°F\nWind Chill: ${weather.imperial.windChill}°F\nPressure: ${weather.imperial.pressure} inHg\nHumidity: ${weather.humidity}%\nWind Speed: ${weather.windSpeed} mph\nPrecipitation: ${weather.precipitation} in\nAs of: ${weather.obsTimeLocal}`}
+          </Text>
+        ) : (
+          <Text style={[styles.cardBody, {color: fg}]}>Loading...</Text>
+        )}
+      </View>
+    </ScrollView>
   );
 }
 
-function App(): JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
-
+function App(): React.JSX.Element {
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View style={[styles.domainRow, {backgroundColor: isDarkMode ? Colors.black : Colors.white}]}>
-          <Text style={styles.checkmark}>✓</Text>
-          <Text style={[styles.domainText, {color: isDarkMode ? Colors.white : Colors.black}]}>
-            nextjs-website-alpha-weld.vercel.app
-          </Text>
-        </View>
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+    <SafeAreaProvider>
+      <AppContent />
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
   domainRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -119,6 +112,24 @@ const styles = StyleSheet.create({
   domainText: {
     fontSize: 18,
     fontWeight: '600',
+  },
+  card: {
+    margin: 16,
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cardTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  cardBody: {
+    fontSize: 16,
+    lineHeight: 26,
   },
 });
 
